@@ -1,0 +1,46 @@
+#!/bin/bash
+
+die () {
+    retcode=$?
+    echo "ERROR: $1" >&2
+    exit $retcode
+}
+
+help () {
+    echo "Usage:"
+    echo
+    echo "    build [-h|--help] <test-dir> <arguments>"
+    echo
+    echo "    [-h|--help]  Print his help"
+    echo "    [--valgrind] Run the test with Valgrind"
+    echo "    <test-dir>   The directory where tests are to be run"
+    echo "    <arguments>  Options and arguments for the tests"
+    echo
+    exit 2
+}
+
+program="$0"
+
+while [ $# -ge 1 ]; do
+    case "$1" in
+    --help|-h)
+        help
+        ;;
+    --valgrind)
+        valgrind="valgrind --trace-children=yes "
+        shift
+        ;;
+    -*)
+        echo "Illegal option"
+        help
+        ;;
+    *)
+        cd $(reldir b-linux) >/dev/null || die "Did not find executable directory"
+        cd $(searchdir "$1") >/dev/null || die "Did not find executable directory"
+        shift
+        make  || die "Failed to compile"
+        QA_ARGS="$@" $valgrind ctest -V | sed 's/^[1-9][0-9]*\: \(.*\)/\1/'
+        exit $?
+        ;;
+    esac
+done

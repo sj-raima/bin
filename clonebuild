@@ -1,0 +1,274 @@
+#!/bin/sh
+die () {
+    echo
+    echo "------------------------- Environment variables Begin -------------------------"
+    env
+    echo "-------------------------- Environment variables End --------------------------"
+    echo
+    echo "-------------------------------------------------------------------------------"
+    echo "ERROR: $1 occured in ${program}"
+    echo
+    echo "   pwd: $PWD"
+    echo "-------------------------------------------------------------------------------"
+    echo
+    exit 2
+}
+
+only=no
+kmake=no
+cmake=no
+make=no
+prebuild=no
+prebuild_opts=-n
+stage_src=no
+share_src=no
+convert_src=no
+build=no
+package=no
+convert_package0=no
+package_name=rdm_mini
+check=no
+_test=no
+prebuild_option=
+
+target=
+
+help () {
+    echo "$program [<options>] [prebuild | kmake | cmake | make | 
+         stage-src | share-src | convert-src | build | package | convert-package0 | check | test]
+Options:
+    -p | --package-name PACKAGE      Package to build [rdm_mini]
+    -t | --target TARGET             Cross compiled target []
+         --only                      Only do the steps specified
+"
+}
+
+clone_repository () {
+    if [ $only = no ]; then
+        rm -rf /var/tmp/b-clone
+        git clone . /var/tmp/b-clone || die "Clone repository"
+        cd /var/tmp/b-clone || die "Changing working directory to the clone"
+    else
+        cd /var/tmp/b-clone || die "Changing working directory to the clone"
+        git fetch
+        git reset --hard origin
+    fi
+}
+
+build_prebuild () {
+    if [ $prebuild = yes ]; then
+        ./prebuild.pl --nojava $prebuild_opts $prebuild_option || die "Running prebuild.pl"
+    fi
+}
+
+build_kmake () {
+    if [ $kmake = yes ]; then
+        . ./rdm.sh
+        kmake -r -f kmake.mak || die "Running kmake"
+    fi
+}
+
+build_cmake () {
+    if [ $cmake = yes ]; then
+        mkdir b-cmake
+        cd b-cmake || die "Changing working directory to the build directory"
+        cmake .. || die "Running cmake"
+        make || die "Running make"
+    fi
+}
+
+build_make () {
+    if [ $make = yes ]; then
+        autoreconf --install --force
+        mkdir b-make
+        cd b-make || die "Changing working directory to the build directory"
+        ../configure || die "Running configure"
+        make || die "Running make"
+    fi
+}
+
+stage_src () {
+    if [ $stage_src = yes ]; then
+        release-system/stage-src.sh -p ${package_name} || die "Stage source for ${package_name}"
+    fi
+}
+
+share_src () {
+    if [ $share_src = yes ]; then
+        rm -rf "/users/$USER/b-package/release-system" 2>/dev/null
+        rm -rf "/users/$USER/b-package/b-${package_name}" 2>/dev/null
+        mkdir "/users/$USER/b-package" 2>/dev/null
+        cp -a release-system /users/$USER/b-package/. || die "Failed to share release-system"
+        cp -a b-${package_name} /users/$USER/b-package/. || die "Failed to share b-${package_name}"
+    fi
+}
+
+convert_src () {
+    if [ $convert_src = yes ]; then
+        release-system/convert-src.sh -p ${package_name} || die "Convert source for ${package_name}"
+    fi
+}
+
+build () {
+    if [ $build = yes ]; then
+        release-system/build.sh -p ${package_name} --host-package-name lnx-x86_64 $target || die "Build for ${package_name}"
+    fi
+}
+
+package () {
+    if [ $package = yes ]; then
+        release-system/package.sh -p ${package_name} --host-package-name lnx-x86_64 $target || die "Package for ${package_name}"
+    fi
+}
+
+convert_package0 () {
+    if [ $convert_package0 = yes ]; then
+        release-system/convert-package0.sh -p ${package_name} --host-package-name lnx-x86_64 $target || die "convert-package0 for ${package_name}"
+    fi
+}
+
+check () {
+    if [ $check = yes ]; then
+        release-system/check.sh -p ${package_name} --host-package-name lnx-x86_64 $target || die "Check for ${package_name}"
+    fi
+}
+
+_test () {
+    if [ $_test = yes ]; then
+        QA_CHECK=${package_name} release-system/test/all.sh --host-package-name lnx-x86_64 $target || die "Test for ${package_name}"
+    fi
+}
+
+parse_command_line () {
+   program=`basename "$0"`
+   while [ $# -gt 0 ]; do
+        case "$1" in
+            prebuild)
+                prebuild=yes
+                prebuild_opts=
+                shift
+            ;;
+            kmake)
+                if [ $only = no ]; then
+                    prebuild_option=--kmake
+                    prebuild_opts=
+                    prebuild=yes
+                fi
+                kmake=yes
+                shift
+            ;;
+            cmake)
+                if [ $only = no ]; then
+                    prebuild_option=--cmake
+                    prebuild_opts=-n
+                    prebuild=yes
+                fi
+                cmake=yes
+                shift
+            ;;
+            make)
+                if [ $only = no ]; then
+                    prebuild_option=--make
+                    prebuild_opts=-n
+                    prebuild=yes
+                fi
+                make=yes
+                shift
+            ;;
+            stage-src)
+                stage_src=yes
+                shift
+            ;;
+            share-src)
+                if [ $only = no ]; then
+                    stage_src=yes
+                fi
+                share_src=yes
+                shift
+            ;;
+            convert-src)
+                if [ $only = no ]; then
+                    stage_src=yes
+                fi
+                convert_src=yes
+                shift
+            ;;
+            build)
+                if [ $only = no ]; then
+                    stage_src=yes
+                fi
+                build=yes
+                shift
+            ;;
+            package)
+                if [ $only = no ]; then
+                    stage_src=yes
+                    build=yes
+                fi
+                package=yes
+                shift
+            ;;
+            convert-package0)
+                if [ $only = no ]; then
+                    stage_src=yes
+                    build=yes
+                    package=yes
+                    convert_src=yes
+                fi
+                convert_package0=yes
+                shift
+            ;;
+            check)
+                if [ $only = no ]; then
+                    stage_src=yes
+                    build=yes
+                    package=yes
+                fi
+                check=yes
+                shift
+            ;;
+            test)
+                test=yes
+                shift
+            ;;
+            -h|--help)
+                help
+                exit 2
+            ;;
+            -p|--package-name)
+                shift
+                package_name=$1
+                shift
+            ;;
+            -t|--target)
+                shift
+                target="--target $1"
+                shift
+            ;;
+            --only)
+                only=yes
+                shift
+            ;;
+            *)
+                echo "Unknown option $1";
+                exit 2
+            ;;
+        esac
+    done
+}
+
+parse_command_line "$@"
+
+clone_repository
+build_prebuild
+build_kmake
+build_cmake
+build_make
+stage_src
+share_src
+convert_src
+build
+package
+convert_package0
+check
+_test

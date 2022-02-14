@@ -1,0 +1,5 @@
+#!/bin/bash
+
+time perf record --freq 10000 --call-graph lbr -e bus-cycles:u "$@"
+
+#time perf record --freq 20000 --call-graph lbr -e bus-cycles:u -e cache-misses:u -e branch-load-misses:u -e LLC-load-misses:u "$@"

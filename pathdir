@@ -1,0 +1,23 @@
+#!/bin/bash
+
+relpath=.
+if test -n "$1"; then
+    rel="$1";
+else
+    rel='.'
+fi
+while test "$(pwd)" != "/"; do
+    if test -e .git; then
+        echo "$rel/$relpath"
+        exit 0;
+    fi
+    if [[ $(basename $(pwd)) =~ b-.* ]] ; then
+        relpath="$(basename $(pwd))/$relpath"
+    else
+        relpath="$(basename $(pwd))/$relpath"
+    fi
+    cd ..
+done
+echo "Not inside a project" >&2
+echo "."
+exit 1

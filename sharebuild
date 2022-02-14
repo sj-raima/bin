@@ -1,0 +1,175 @@
+#!/bin/sh
+#
+#   Run this as follows:
+#
+#       clonebuild share-src
+#       sharebuild qnx-build-check
+#       sharebuild vxworks-build-check
+#       sharebuild vxworks-rtp-build-check
+#       sharebuild integrity-build-check
+#       sharebuild sol-64-build-check
+#       sharebuild sol-x8664-build-check
+#       sharebuild linux-64-build-check
+#       sharebuild hpux-ia64-build-check
+#       sharebuild hpux-risc64-build-check
+#       sharebuild aix-64-build-check
+#       sharebuild qnx-x86-build-check
+#       sharebuild neut-ppc32-build-check
+#
+die () {
+    echo
+    echo
+    echo "-------------------------------------------------------------------------------"
+    echo "ERROR: $1 occured in ${program}"
+    echo "-------------------------------------------------------------------------------"
+    echo
+    exit 2
+}
+
+help () {
+    echo "$program [<options>] [share-release-system] [build|package|check]_[qnx|integrity|vxworks|vxworks-rtp
+            sol-64|sol-32]
+Options:
+"
+}
+
+package_dir=/users/sj/b-package/
+package=rdm_mini
+other_options=
+target=
+
+do_sharebuild () {
+    if [ ${script} = "build-native.sh" -o ${script} = "build.sh" -o ${script} = "build-check.sh" ]; then
+        rm -rf $package_dir$do 2>/dev/null
+        mkdir $package_dir$do || die "Failed to create directory $package_dir$do"
+        cp -a ${package_dir}b-$package $package_dir$do/. || die "Failed to copy files into b-$package"
+    fi
+    cp -a ${package_dir}release-system $package_dir$do/. || die "Failed to copy the release-system"
+
+    if [ -n "$target" ]; then
+        target_opt="--target $target "
+    else
+        arget_opt=
+    fi
+    ssh $ssh_host "PATH=\$PATH:$remote_path; export PATH; true && \
+                   cd $package_dir$do && \
+                   sh -x release-system/$script \
+                       --host-package-name $host_package_name \
+                       -p $package \
+                       $other_options \
+                       $target_opt" || die "$script for $do"
+}
+
+parse_command_line () {
+   program=`basename "$0"`
+   if [ $# -gt 0 ]; then
+        case "$1" in
+            *-*64-*)
+                bits=64
+            ;;
+            *-*32-*)
+                bits=32
+            ;;
+            "")
+                bits=
+            ;;
+            *)
+                bits=xxxx
+            ;;
+        esac
+        case "$1" in
+            vxworks-rtp-*)
+                ssh_host=sj-vxworks
+                host_package_name=lnx-x86_32
+                target=vxworks-rtp-x86
+                do=vxworks-rtp
+            ;;
+            vxworks-*)
+                ssh_host=sj-vxworks
+                host_package_name=lnx-x86_32
+                target=vxworks-x86
+                do=vxworks
+            ;;
+            integrity-*)
+                ssh_host=sj-integrity
+                host_package_name=lnx-x86_64
+                target=x86-ghs-integrity-11.0
+                do=integrity
+            ;;
+            sol-x86*-*)
+                ssh_host=quilcene
+                host_package_name=sol-x86_$bits
+                other_options=--no-non-default-install
+                do=sol-x86$bits
+            ;;
+            sol-*-*)
+                ssh_host=sparc10-sf240
+                host_package_name=sol-sparc$bits
+                other_options=--no-non-default-install
+                do=sol-$bits
+            ;;
+            linux-*-*)
+                ssh_host=sj-linux$bits
+                host_package_name=lnx-x86_$bits
+                do=linux-$bits
+            ;;
+            hpux-ia*-*)
+                ssh_host=hpia23
+                host_package_name=hpux-ia$bits
+                do=hpux-ia$bits
+            ;;
+            hpux-risc*-*)
+                ssh_host=hpux11
+                host_package_name=hpux-parisc$bits
+                do=hpux-risc$bits
+            ;;
+            aix-*-*)
+                ssh_host=aix53
+                host_package_name=aix-ppc$bits
+                do=aix-$bits
+            ;;
+            neut-ppc32-*)
+                ssh_host=sj-qnx
+                host_package_name=lnx-x86_64
+                target=powerpc-unknown-nto-qnx6.5.0
+                do=neut-ppc32
+            ;;
+            qnx-x86-*)
+                ssh_host=sj-qnx
+                host_package_name=lnx-x86_64
+                target=qnx-x86_32
+                do=qnx-x86
+            ;;
+            -h|--help)
+                help
+                exit 2
+            ;;
+            *)
+                echo "Unknown option $1";
+                exit 2
+            ;;
+        esac
+        script="${1#$do-}.sh"
+    fi
+}
+
+remote_path="/usr/contrib/bin:/eng/build/lnx/makeself-2.1.5"
+
+case "$do" in
+    hpux-*)
+        remote_path="$REMOTE_PATH:/usr/contrib/bin"
+    ;;
+esac
+
+parse_command_line "$@"
+
+if [ "$script" = stage-src.sh ]; then
+    clonebuild share-src
+else
+    if [ "$script" = all.sh ]; then
+        clonebuild share-src
+        script=build-check.sh
+    fi
+    do_sharebuild
+fi
+

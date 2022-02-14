@@ -1,0 +1,94 @@
+#!/bin/bash
+
+help () {
+    echo "ls-diff [<options>] path path
+    Monitor the difference between two files or directories
+
+Options:
+    [-h | --help]     Display this message
+    [-L | --loop]     Repeatedly monitor"
+}
+
+parse_command_line () {
+    program=`basename "$0"`
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -h|--help)
+                help
+                exit 2
+            ;;
+            -L|--loop)
+                loop=1
+            ;;
+            -*)
+                echo "Illegal command line option $1, --help for help"
+                exit 1
+            ;;
+            *)
+            if [ -n "$path1" ]; then
+                if [ -n "$path2" ]; then
+                    echo "Too many arguments $1, --help for help"
+                    exit 1
+                else
+                    path2="$1"
+                fi
+            else
+                path1="$1"
+            fi
+            ;;
+        esac
+        shift
+    done
+    if [ -z "$path2" ]; then
+        echo "Too few arguments, --help for help"
+        exit 1
+    fi
+}
+
+loop=
+path1=
+path2=
+
+parse_command_line "$@"
+
+
+diff_paths () {
+    if [ -d "$path1" ]; then
+        pushd "$path1" >/dev/null
+        ls-hex . >/var/tmp/path1
+        popd >/dev/null
+    else
+        ls-hex "$path1" >/var/tmp/path1
+    fi
+    if [ -d "$path2" ]; then
+        pushd "$path2" >/dev/null
+        ls-hex . >/var/tmp/path2
+        popd >/dev/null
+    else
+        ls-hex "$path2" >/var/tmp/path2
+    fi
+    diff --label "$path1" --label "$path2" -U0 /var/tmp/path1 /var/tmp/path2 >/var/tmp/path1diffpath2
+    if [ -s /var/tmp/path1diffpath2 ]; then
+        cat /var/tmp/path1diffpath2;
+    else
+        echo "--- $path1 -- This path had the same content recorded as the following path:"
+        echo "+++ $path2 -- First and last line follows:"
+        echo -n ' '
+        head -n 2 /var/tmp/path1 | tail -n 1
+        echo -n ' '
+        tail -n 1 /var/tmp/path1
+    fi;
+}
+
+if [ -n "$loop" ]; then
+    while true; do
+        echo -----------------------------------------------
+        diff_paths
+        sleep 2
+    done
+else
+    diff_paths
+fi
+
+

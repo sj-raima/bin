@@ -1,0 +1,4 @@
+#!/bin/sh
+git mv "$1" tmp
+git mv "$2" "$1"
+git mv tmp "$2"

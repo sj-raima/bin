@@ -1,0 +1,13 @@
+#!/bin/sh
+
+while [ $(pwd) != "/" ]; do
+    if [ -e .git ]; then
+        if [ -x prebuild.pl ]; then
+            ./prebuild.pl "$@"
+            exit 0;
+        fi
+    fi
+    cd ..
+done
+echo "No project found"
+exit 1;

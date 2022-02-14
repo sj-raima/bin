@@ -1,0 +1,30 @@
+#!/bin/bash
+
+#
+#  Assuming you have a top-level project directory identified with the
+#  presence of a .git directory and build directories identified with
+#  b-<build-dir-suf> you can now run check withut specifyying the path
+#  to the check script
+#
+
+relpath=.
+relup=.
+
+while test "$(cd $relup; pwd)" != "/"; do
+    if test -e "$relup/.git"; then
+        abspath="$(cd $relup && pwd)"
+        "$abspath/$relpath/check.sh" "$@"
+        exit $?;
+    fi
+    base="$(basename $(cd $relup; pwd))"
+    if [[ ${base} =~ b-.* ]] ; then
+        :
+    elif [[ ${base} =~ cmake-build-.* ]] ; then
+        :
+    else
+        relpath="${base}/$relpath"
+    fi
+    relup="$relup/.."
+done
+echo "Not inside a project" >&2
+exit 1

@@ -1,0 +1,69 @@
+#!/bin/bash
+
+die () {
+    retcode=$?
+    echo "ERROR: $1" >&2
+    exit $retcode
+}
+
+program="$0"
+
+arg=
+make=
+link=
+help=
+
+while [ $# -gt '0' -a -z "$arg" ]; do
+    if [ "$1" = "--make" ]; then
+        make=1
+        shift
+    elif [ "$1" = "--link" ]; then
+        link=1
+        shift
+    elif [ "$1" = "--help" -o "$1" = "-h" ]; then
+        help=1
+        shift
+    else
+        arg="$1"
+    fi
+done
+
+if [ -n "$help" ]; then
+    echo "Usage:"
+    echo
+    echo "    rdm [--make] [--link] [-h|--help] <command> <arguments>"
+    echo
+    echo "    --make       Build the tool before executing it"
+    echo "    --link       Make a symbolic link for the command to the current"
+    echo "                   working directory"
+    echo "    [-h|--help]  Print his help"
+    echo "    <command>    The rdm-<command> to execute"
+    echo "    <arguments>  Arguments that are to be passed on to rdm-<command>"
+    echo
+    exit 2
+fi
+
+if [ $# = '0' ]; then
+    echo "error: rdm require at least one argument" >&2
+    exit 2
+fi
+
+if [ -n "$make" ]; then
+    pushd $(searchdir source/rdm-"$1") >/dev/null || die "Did not find executable directory"
+    make 2>/dev/null >/dev/null || die "Failed to compile"
+    popd
+fi
+
+cmd=$(searchdir source/rdm-"$1" 2>/dev/null)rdm-"$1"
+if [ $? != 0 ]; then
+    echo "error: RDM command not found: rdm-""$1" >&2
+    exit 2
+fi
+
+if [ -n "$link" ]; then
+    ln -s "$cmd" rdm-"$1" >/dev/null || die "Did not find executable directory"
+else
+    shift
+    echo "cd $(pathdir) &&" "$cmd" -q "$@"
+    rlwrap --prompt-colour=red --file=/home/sj/bin/rdm-sql.completion "$cmd" -q "$@"
+fi

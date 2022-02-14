@@ -1,0 +1,70 @@
+#!/bin/bash
+
+#
+#  Put the following in ~/.bashrc:
+#
+#  function rcd {
+#    cd "$(reldir $1)"
+#  }
+#
+#  Assuming you have a top-level project directory identified with the
+#  presence of a .git directory and build directories identified with 
+#  b-<build-dir-suf>  you can now change the current working directory between
+#  build directories or the source directory by giving "b-<build-dir-suf>"
+#  as an argument to rcd.  Use "." for the source directory.
+#
+#  Example:
+#
+#    sj@crex:~/portland/test/tfs/rsql/func$ rcd b-linux
+#    sj@crex:~/portland/b-linux/test/tfs/rsql/func$ rcd .
+#    sj@crex:~/portland/test/tfs/rsql/func$ rcd b-malloc
+#    sj@crex:~/portland/b-malloc/test/tfs/rsql/func$ rcd b-linux
+#    sj@crex:~/portland/b-linux/test/tfs/rsql/func$
+#
+
+relpath=.
+relup=.
+
+if [ "$1" = "-f" ]; then
+    shift
+    relpath=$1
+    shift
+else
+    relpath=.
+fi
+
+if test -n "$1"; then
+    rel="$1";
+else
+    rel='.'
+fi
+while test "$(pwd)" != "/"; do
+    if test -e .git; then
+        if [ $# -gt 1 ]; then
+            while [ $# -gt 0 ]; do
+                echo -n "$relup/$1/$relpath "
+                shift
+            done
+            echo
+        else
+            if [ -d cmake-build-${rel} ]; then
+                echo "$relup/cmake-build-$rel/$relpath"
+            else
+                echo "$relup/$rel/$relpath"
+            fi
+        fi
+        exit 0;
+    fi
+    if [[ $(basename $(pwd)) =~ b-.* ]] ; then
+        :
+    elif [[ $(basename $(pwd)) =~ cmake-build-.* ]] ; then
+        :
+    else
+        relpath="$(basename $(pwd))/$relpath"
+    fi
+    relup="$relup/.."
+    cd ..
+done
+echo "Not inside a project" >&2
+echo "."
+exit 1

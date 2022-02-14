@@ -1,0 +1,69 @@
+#!/bin/bash
+
+#
+#  Put the following in ~/.bashrc:
+#
+#  function scd {
+#    cd "$(searchdir $1)"
+#  }
+#
+#  Assuming you have a directory tree described by the presence of
+#  dirs in your top level source directory and the presence of a .git
+#  directory and build directories identified with b-<build-dir-suf>
+#  you can now change the current working directory within the build
+#  directories or within the source directory by giving a directory to
+#  search for as an argument to scd.
+#
+#  Example:
+#
+#    sj@crex:~/portland/b-linux/source/rdm$ scd 14cursor
+#    sj@crex:~/portland/b-linux/test/tfs/rdm/14cursor$ scd base
+#    sj@crex:~/portland/b-linux/source/base$ 
+#
+
+topdir=
+relup=.
+if test -n "$1"; then
+    rel="$1";
+else
+    rel='.'
+fi
+while test "$(pwd)" != "/"; do
+    if test -e .git; then
+        if [ -z "$topdir" ]; then
+            topdir="$relup"
+        fi
+
+        if [ -z "$1" -o "$1" = . ]; then
+            echo "$topdir"
+            exit 0
+        fi
+        dirs=$(cat dirs | sed -e 's/^/\//;s/$/\//;s/\\/\//g' | grep "/$1/\$")
+        dir=$(echo "$dirs" | head -n 1)
+        if [ -n "$dir" ]; then
+            alt_dir=$(echo "$dirs" | tail -n +2 | sed -e "s#^#    $topdir#;s/\/\$//")
+            if [ -n "$alt_dir" ]; then
+                echo "warning: ignoring these directories" >&2
+                echo "$alt_dir" >&2
+            fi
+            echo "$topdir$dir"
+            exit 0;
+        else
+            echo "error: No such directory" >&2
+            echo "."
+            exit 1;
+        fi
+    fi
+    if [[ $(basename $(pwd)) =~ b-.* ]] ; then
+        topdir="$relup"
+    elif [[ $(basename $(pwd)) =~ cmake-build-.* ]] ; then
+        topdir="$relup"
+    else
+        :
+    fi
+    relup="$relup/.."
+    cd ..
+done
+echo "error: Not inside a project" >&2
+echo "."
+exit 1

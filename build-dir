@@ -1,0 +1,247 @@
+#!/bin/bash
+
+init_options () {
+    cpp_flags=
+    cmake_opt=
+    export CC=gcc
+    export CXX=g++
+}
+
+setup_base_and_version () {
+    case "$base" in
+        *-[123456789])
+            base=${1%-[123456789]}
+            ;;
+        *-[123456789][123456789])
+            base=${1%-[123456789][123456789]}
+            ;;
+        *-[123456789][.][0123456789])
+            base=${1%-[123456789][.][0123456789]}
+            ;;
+        *-[123456789][123456789][.][0123456789])
+            base=${1%-[123456789][123456789][.][0123456789]}
+            ;;
+        *-[123456789][.][0123456789][123456789])
+            base=${1%-[123456789][.][0123456789][123456789]}
+            ;;
+        *-[123456789][123456789][.][0123456789][123456789])
+            base=${1%-[123456789][123456789][.][0123456789][123456789]}
+            ;;
+    esac
+
+    _version=${1##$base}
+    if [ -n "$_version" ]; then
+        export version=${_version#-}
+    fi
+}
+
+setup_cc_and_cxx () {
+    CC="$CC$_version"
+    CXX="$CXX$_version"
+}
+
+build_aarch64 () {
+    NATIVE_BUILD_DIR=$(pwd)/b-debug
+    CC="aarch64-linux-gnu-gcc$_version"; export CC
+    CXX="aarch64-linux-gnu-g++$_version"; export CXX
+    CPPFLAGS="-DNDEBUG"; export CPPFLAGS
+    CFLAGS="-O2 -g"; export CFLAGS
+    CXXFLAGS="-O2 -g -frtti -fexceptions"; export CXXFLAGS
+    OBJCFLAGS=""; export OBJCFLAGS
+    LDFLAGS=""; export LDFLAGS
+    LIBS=""; export LIBS
+
+    mkdir b-aarch64
+    pushd b-aarch64
+    ../configure --build=`\`dirname "$0"\`/config.guess` --host=aarch64-unknown-linux-gnu --enable-native-build-dir=$NATIVE_BUILD_DIR
+}
+
+build_cross () {
+    NATIVE_BUILD_DIR=$(pwd)/b-debug
+    CC="$target-gcc$_version"; export CC
+    CXX="$target-g++$_version"; export CXX
+    CPPFLAGS="-DNDEBUG"; export CPPFLAGS
+    OBJCFLAGS=""; export OBJCFLAGS
+    LDFLAGS=""; export LDFLAGS
+    LIBS=""; export LIBS
+
+    mkdir $dir
+    cd $dir
+    ../configure --build=`\`dirname "$0"\`/config.guess` --host=$target --enable-native-build-dir=$NATIVE_BUILD_DIR
+}
+
+build_cross_debug () {
+    target=${base##b-cross-debug-}
+    CFLAGS="-O0 -g"; export CFLAGS
+    CXXFLAGS="-O0 -g -frtti -fexceptions"; export CXXFLAGS
+
+    build_cross
+}
+
+build_cross_release () {
+    target=${base##b-cross-release-}
+    CFLAGS="-O2 -g"; export CFLAGS
+    CXXFLAGS="-O2 -g -frtti -fexceptions"; export CXXFLAGS
+    
+    build_cross
+}
+
+
+common_options () {
+    cpp_flags="$cpp_flags -DRDM_ASSERT_RDM_UNIX"
+}
+
+setup_build_dir () {
+    rm  cmake-build-$dir/CMakeCache.txt 2>/dev/null
+    mkdir cmake-build-$dir
+    pushd cmake-build-$dir
+    cmake -DCMAKE_C_FLAGS:STRING="$cpp_flags" -DCMAKE_CXX_FLAGS:STRING="$cpp_flags" $cmake_opt ..
+    popd
+}
+
+help () {
+    echo "Usage: build-dir directory"
+    echo
+    echo "Specify directory as one of the following:"
+    echo     
+    echo "    release                CMake release build"
+    echo "    debug                  CMake debug build"
+    echo "    shared                 CMake debug build with shared libraries"
+    echo "    valgrind               CMake debug build suitable for run with"
+    echo "                             valgrind"
+    echo "    tag-profile            CMake debug build suitable for profiling"
+    echo "                             memory allocations"
+    echo "    valgrind               CMake debug build suitable for running"
+    echo "                           Valgrind with the memcheck plugin"
+    echo "    all-source-off         CMake build will all source off"
+    echo "    gdb                    CMake debug build suitable for debugging"
+    echo "                             where GDB may be started automatically"
+    echo "    release-no-os          NO_OS CMake release build"
+    echo "    no-os                  NO_OS CMake debug build"
+    echo "    tag-fail               CMake build doing failure simulation"
+    echo "                             using the QA Framework"
+    echo "    file-stdio             CMake build where we use stdio for"
+    echo "                             file operations"
+    echo "    b-cross-debug-target   Debug cross build using the GNU build"
+    echo "                           system for target"
+    echo "    b-cross-release-target Debug cross build using the GNU build"
+    echo "                           system for target"
+    echo "    b-clean-cache-size-one Set up a clean cache that can only hold one item"
+    echo
+    echo "optionally followed by a dash and a dotted version number on any"
+    echo "of the following formats:"
+    echo
+    echo "    -x"
+    echo "    -xx"
+    echo "    -x.x"
+    echo "    -x.xx"
+    echo "    -xx.x"
+    echo "    -xx.xx"
+}
+
+parse_command_line () {
+    program=`basename "$0"`
+    init_options
+    common_options
+    dir="$1"
+    base="$1"
+    setup_base_and_version "$1"
+
+    setup_cc_and_cxx
+
+    case "$base" in
+        -h|--help)
+            help
+            ;;
+        release)
+            cmake_opt="$cmake_opt -DCMAKE_BUILD_TYPE:STRING=Release"
+            setup_build_dir
+            ;;
+        2release)
+            cmake_opt="$cmake_opt -DCMAKE_BUILD_TYPE:STRING=Release"
+            setup_build_dir
+            ;;
+        debug)
+            cmake_opt="$cmake_opt -DCMAKE_BUILD_TYPE:STRING=Debug"
+            setup_build_dir
+            ;;
+        all-source-off)
+            cmake_opt="$cmake_opt -DCMAKE_BUILD_TYPE:STRING=Debug -DCOMPILE_ALL_SOURCE:STRING=Off"
+            setup_build_dir
+            ;;
+        pack-file-size-1m)
+            cmake_opt="$cmake_opt -DCMAKE_BUILD_TYPE:STRING=Debug"
+            cpp_flags="$cpp_flags -DPACK_FILE_SIZE_MIN='(1024*1024)'"
+            setup_build_dir
+            ;;
+        shared)
+            cmake_opt="$cmake_opt -DBUILD_SHARED_LIBS:BOOL=ON -DCMAKE_INSTALL_PREFIX:PATH=$(pwd)/cmake-build-shared"
+            setup_build_dir
+            ;;
+        
+        valgrind)
+            cpp_flags="$cpp_flags -DRDM_TAG_MALLOC"
+            setup_build_dir
+            ;;
+        tag-profile)
+            cpp_flags="$cpp_flags -DRDM_TAG_PROFILE"
+            setup_build_dir
+            ;;
+        tag-fail)
+            cpp_flags="$cpp_flags -DRDM_TAG_FAIL:BOOL=On"
+            setup_build_dir
+            ;;
+        gdb)
+            cpp_flags="$cpp_flags -DRDM_GDB_EMACS"
+            setup_build_dir
+            ;;
+        clean-cache-size-one)
+            cpp_flags="$cpp_flags -DB_CACHE_PTR_NUM_ENTRIES_IN_ONE_BUCKET=1 -DRDM_DEFAULT_CACHESIZE=1"
+            setup_build_dir
+            ;;
+        release-no-os)
+            cmake_opt="$cmake_opt -DCMAKE_BUILD_TYPE:STRING=Release"
+            cmake_opt="$cmake_opt -DRDM_NO_OS:BOOL=On"
+            setup_build_dir
+            ;;
+        release-easy-profiler)
+            cmake_opt="$cmake_opt -DCMAKE_BUILD_TYPE:STRING=ReleaseWithDebInfo"
+            cmake_opt="$cmake_opt -DRDM_EASY_PROFILER:BOOL=On"
+            setup_build_dir
+            ;;
+        no-os)
+            cpp_flags="$cpp_flags -DRDM_NO_OS:BOOL=On"
+            setup_build_dir
+            ;;
+        file-stdio)
+            cpp_flags="$cpp_flags -DRDM_FILE_STDIO"
+            setup_build_dir
+            ;;
+        verify-in-use)
+            cpp_flags="$cpp_flags -DENABLE_PACK_VERIFY_INUSE"
+            setup_build_dir
+            ;;
+        ndebug)
+            cpp_flags="$cpp_flags -DNDEBUG"
+            setup_build_dir
+            ;;
+        b-cross-debug-*)
+            build_cross_debug
+            ;;
+        b-cross-release-*)
+            build_cross_release
+            ;;
+        b-gnu)
+            mkdir b-gnu
+            cd b-gnu
+            ../configure
+            ;;
+        *)
+            echo "Error: Not a supported directory: $base"
+            exit
+    esac
+}
+
+parse_command_line "$@"
+
+

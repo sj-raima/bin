@@ -1,0 +1,66 @@
+#!/bin/sh
+
+help () {
+    echo "$program [-h | --help | -v | --verbose] [-v | --verbose]
+"
+}
+
+parse_command_line () {
+   program=`basename "$0"`
+   while [ $# -gt 0 ]; do
+        case "$1" in
+            -h|--help)
+                help
+                exit 2
+            ;;
+            -v|--verbose)
+                shift
+                if [ "$verbose" = 1 ]; then
+                    verbose=2
+                else
+                    verbose=1
+                fi
+            ;;
+            -vv)
+                shift
+                verbose=2
+            ;;
+            *)
+                echo "Unknown option $1";
+                exit 2
+            ;;
+        esac
+    done
+}
+
+verbose=
+parse_command_line "$@"
+
+
+for db_dir in $(find -name "*.rdm" -print); do
+    if pushd $db_dir >/dev/null; then
+        if [ "$verbose" = "2" ]; then
+            echo -n "pushd $db_dir && "
+        fi
+        for f in $(find -name "p*.pack" -print); do
+            rm $f
+            if [ "$verbose" = "2" ]; then
+                echo -n "rm $f && "
+            fi
+        done
+        popd >/dev/null;
+        if [ "$verbose" = "2" ]; then
+            echo -n "popd && "
+        fi
+    fi
+    rmdir $db_dir
+    if [ "$verbose" = "2" ]; then
+        echo -n "rmdir $db_dir "
+    fi
+    if [ "$verbose" = "1" -o  "$verbose" = "2" ]; then
+        dir=$(dirname "$db_dir")
+        db=$(basename "$db_dir")
+        db=${db%.rdm}
+        echo "# (cd $dir && rdm-drop -f $db)"
+    fi
+done

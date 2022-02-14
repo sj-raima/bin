@@ -1,0 +1,27 @@
+#!/bin/bash
+
+git push
+
+if [ $? != 0 ]; then
+    stash=$(git stash create)
+    if [ -n "$stash" ]; then
+        git reset --hard
+    fi
+
+    git pull --rebase
+    if [ $? != 0 ]; then
+        git rebase --abort
+        echo
+        echo "Error: Failed to pull with rebase"
+    fi
+    
+    if [ -n "$stash" ]; then
+        git stash apply $stash
+    fi
+
+    git push
+    if [ $? != 0 ]; then
+        echo
+        echo "Error: Failed to push"
+    fi
+fi

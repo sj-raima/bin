@@ -1,0 +1,33 @@
+sudo apt-get install openjdk-11-jdk-headless
+sudo apt-get install libncurses5-dev libncursesw5-dev
+sudo apt-get install openjdk-8-jdk
+sudo apt-get install g++
+sudo apt-get install libc6-dev
+sudo apt-get install locales-all
+sudo apt-get install rlwrap
+sudo apt-get install graphviz
+sudo apt-get install ant
+sudo apt-get install valgrind
+sudo apt-get install emacs
+sudo apt-get install gdb
+sudo apt-get install gdbserver
+sudo apt-get install git
+sudo apt-get install jq
+sudo apt-get install makeself
+sudo apt-get install ninja
+sudo apt-get install openssh
+sudo apt-get install perl-base
+sudo apt-get install manpages-posix-dev
+sudo apt-get install
+sudo apt-get install
+sudo apt-get install
+sudo apt-get install
+sudo apt-get install
+sudo apt-get install
+
+# Install PowerShell
+sudo apt-get update
+sudo apt-get install -y wget apt-transport-https software-properties-common
+wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
+sudo apt-get update

@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/bin/gcc -Wno-maybe-uninitialized -fno-diagnostics-show-caret "$@"

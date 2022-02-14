@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" = "--ratio" -o "$1" = "-r" ]; then
+   args="-c ratio"
+   shift
+fi
+
+perf diff $args perf.data  $(reldir -f perf.data "$@")

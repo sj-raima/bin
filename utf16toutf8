@@ -1,0 +1,12 @@
+#!/bin/sh
+
+for file in "$@" ; do
+    outfile="$(basename "$file")"
+    if [ "$file" = "$outfile" ]; then
+        infile="$file.orig"
+        mv "$file" "$file.orig"
+    else
+        infile="$file"
+    fi
+    iconv -f UTF-16 -t UTF-8 -o "$outfile" "$infile"
+done

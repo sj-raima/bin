@@ -1,0 +1,4 @@
+#!/bin/bash
+
+egypt CMakeFiles/rdmtfs_embed-14.dir/$1.144r.expand >$1.dot
+kgraphviewer $1.dot

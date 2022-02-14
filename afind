@@ -1,0 +1,16 @@
+#!/bin/sh
+
+cur=.
+
+if test $# = 2 ; then
+  cur=$1
+  shift
+fi
+
+if test $# != 1 ; then
+  echo "$0: Illegal number of parameters"
+  exit 1
+fi
+
+
+find $cur -name "$1" | grep -v src/products | grep -v RDMMobile-4

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+while [ $(pwd) != "/" ]; do
+    if [ -e .git ]; then
+        if [ -x prebuild.pl ]; then
+            if [ -f /snap/bin/clion ]; then
+                nohup /snap/bin/clion . "$@" >/dev/null 2>/dev/null </dev/null &
+            else
+                nohup clion.sh . "$@" >/dev/null 2>/dev/null </dev/null &
+            fi
+            exit 0;
+        fi
+    fi
+    cd ..
+done
+echo "No project found"
+exit 1;
+

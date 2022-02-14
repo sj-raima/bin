@@ -1,0 +1,16 @@
+#!/bin/sh
+
+cur=.
+
+if test $# = 3 ; then
+  cur=$1
+  shift
+fi
+
+if test $# != 2 ; then
+  echo "$0: Illegal number of parameters"
+  exit 1
+fi
+
+# How can we do this more eficiently
+find $cur -name "$2" -exec grep "$1" "{}" zzzzz ";" 2>/dev/null | grep -v src/products | grep -v RDMMobile-4

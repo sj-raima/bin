@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ $# = 2 ]; then
+    for file in $(git grep --name-only "\b$1\b"); do
+        sed -i -e "s/\b$1\b/$2/g" "$file"
+    done
+elif [ $# = 3 ]; then
+    for file in $(git grep --name-only "$1"); do
+        sed -i -e "s/$2/$3/g" "$file"
+    done
+else
+    echo "Expected two or three arguments" >&2
+fi

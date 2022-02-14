@@ -1,0 +1,14 @@
+die () {
+   echo  $1;
+   exit 1;
+}
+
+[ $# != 2 ] || die "illegal number of arguments"
+
+if [ -e "$1" ]; then
+   echo "$1 already exists"
+   exit 1;
+fi
+
+mkdir $1 || die
+cd $1

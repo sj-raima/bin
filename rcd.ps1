@@ -3,16 +3,14 @@
 # Print the help text
 Function print_help {
     Write-Host "Usage: rcd [-Print] [-h|-Help] [direcory]"
-    Write-Host ""
+    Write-Host
     Write-Host "Change the current working directory based on a build directory name."
     Write-Host "You can omit any prefix starting with 'cmake-build-' or 'b-'."
-    Write-Host ""
-    Write-Host "Options:"
-    Write-Host ""
-    Write-Host "    -h|--Help     This help text"
-    Write-Host "    --Print       Print out the directory without any warnings instead"
-    Write-Host "                  of actually changing the current working directory" 
-    Write-Host "    --No-Warnings Do not produce any warnings"
+    Write-Host
+    Write-Host "    -h|-Help     This help text"
+    Write-Host "    -Print       Print out the directory without any warnings instead"
+    Write-Host "                 of actually changing the current working directory" 
+    Write-Host "    -No-Warnings Do not produce any warnings"
     exit 1
 }
 
@@ -31,7 +29,7 @@ Function parse_cmd_line {
             print_help
         }
         elseif ($arg -match '^-?-[Pp]rint$') {
-            $Script:cd = 'Write-Host'
+            $Script:cd = 'Write-Output'
         }
         elseif ($arg -match '^-?-[Nn]o-[Ww]arnings?$') {
         }

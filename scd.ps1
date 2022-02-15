@@ -2,19 +2,17 @@
 
 # Print the help text
 Function print_help {
-    Write-Host "Usage: scd [-Print] [-h|-Help] [--No-Duplicates] [direcory]"
-    Write-Host ""
+    Write-Host "Usage: scd [-Print] [-h|-Help] [-No-Duplicates] [direcory]"
+    Write-Host
     Write-Host "Change the current working directory based on a leaf, partial, or full"
     Write-Host "directory path such as '14trans' or 'test/rdm-tfs'. If the directory"
     Write-Host "is not unique, the first directory will be used with a warning for"
     Write-Host "other directories."
-    Write-Host ""
-    Write-Host "Options:"
-    Write-Host ""
-    Write-Host "    -h|--Help     This help text"
-    Write-Host "    --Print       Print out the directory without any warnings instead"
-    Write-Host "                  of actually changing the current working directory"
-    Write-Host "    --No-Warnings Do not produce any warnings"
+    Write-Host
+    Write-Host "    -h|-Help     This help text"
+    Write-Host "    -Print       Print out the directory without any warnings instead"
+    Write-Host "                 of actually changing the current working directory"
+    Write-Host "    -No-Warnings Do not produce any warnings"
     exit 1
 }
 
@@ -34,7 +32,7 @@ Function parse_cmd_line {
             print_help
         }
         elseif ($arg -match '^-?-[Pp]rint$') {
-            $Script:cd = 'Write-Host'
+            $Script:cd = 'Write-Output'
             $Script:no_duplicates = $True
         }
         elseif ($arg -match '^-?-[Nn]o-[Ww]arnings?$') {

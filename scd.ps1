@@ -20,19 +20,19 @@ Function print_help {
 #
 # This sets the following Script variables:
 #
-#    $cd            The command to use when the directory later is found
+#    $print     Print the location instead if this is true
 #    $search_dir    The directory we are searching for ($null or '.' for the top)
 #    $no_duplicates Do not warn about duplicates
 #
 Function parse_cmd_line {
-    $Script:cd = 'Set-Location'
+    $Script:no_duplicates = $False
     for ($i = 0; $i -lt $Script:args.count; $i++) {
         $arg = $Script:args[$i]
         if ($arg -match '^(-h|-?-[Hh]elp)$') {
             print_help
         }
         elseif ($arg -match '^-?-[Pp]rint$') {
-            $Script:cd = 'Write-Output'
+            $Script:print = $True;
             $Script:no_duplicates = $True
         }
         elseif ($arg -match '^-?-[Nn]o-[Ww]arnings?$') {
@@ -50,6 +50,11 @@ Function parse_cmd_line {
     }
 }
 
+# Search the directories
+#
+# This uses the Script variables set by parse_cmd_line and the file 'dirs'
+# in the top source directory to search for directory locations.
+#
 Function find_directory {
     $dir = $pwd
     while ($dir -ne "") {
@@ -58,36 +63,32 @@ Function find_directory {
                 $build_dir = $dir
             }
             if ($search_dir -eq $Null -or $search_dir -eq '.') {
-                Invoke-Expression "$cd $build_dir"
+                $found = $build_dir
             }
             else {
-                $found = $False
+                $found = $Null
                 $ignored_duplicates = $False
                 foreach ($rel_path in Get-Content (Join-Path -Path $dir -ChildPath 'dirs')) {
                     if ($rel_path -match "(^|\\)$search_dir$"){
                         $path = Join-Path -Path $build_dir -ChildPath $rel_path
-                        if (-Not $found) {
-                            $found = $True
-                            Invoke-Expression "$cd $path"
-                            if ($no_duplicates) {
-                                return
-                            }
+                        if ($found -eq $Null) {
+                            $found = $path
                         }
-                        else {
-                            if (-Not $ignored_duplicates) {
-                                $ignored_duplicates = $True
-                                Write-Host 'warning: ignoring these directories'
-                            }
-                             Write-Host "    $rel_path"
+                        elseif (-Not $no_duplicates) {
+                            Write-Host "Warning: Ignored: scd $rel_path"
                         }
                     }
-                    
                 }
-                if (-Not $found) {
+                if ($found -eq $Null) {
                     Write-Error "No such directory: $search_dir" -ErrorAction stop
                 }
             }
-            return
+            if ($Script:print) {
+                return $found
+            }
+            else {
+                return Set-Location $found
+            }
         }
         elseif ((Split-Path $dir -Leaf) -match '^cmake-build-') {
             $build_dir = $dir

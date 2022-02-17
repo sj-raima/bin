@@ -18,18 +18,17 @@ Function print_help {
 #
 # This sets the following Script variables:
 #
-#    $cd        The command to use when the directory later is found
+#    $print     Print the location instead if this is true
 #    $build_dir The build directory ($null or '.' for the source directory)
 #
 Function parse_cmd_line {
-    $Script:cd = 'Set-Location'
     for ($i = 0; $i -lt $Script:args.count; $i++) {
         $arg = $Script:args[$i]
         if ($arg -match '^(-h|-?-[Hh]elp)$') {
             print_help
         }
         elseif ($arg -match '^-?-[Pp]rint$') {
-            $Script:cd = 'Write-Output'
+            $Script:print = $True
         }
         elseif ($arg -match '^-?-[Nn]o-[Ww]arnings?$') {
         }
@@ -50,7 +49,7 @@ Function parse_cmd_line {
 # This uses the Script variables set by parse_cmd_line
 #
 Function find_directory {
-    $relpath = '.';
+    $relpath = $Null;
     $dir = $pwd
     while ($dir -ne "") {
         if ((Test-Path -Path (Join-Path -Path $dir -ChildPath '.git'))) {
@@ -59,8 +58,12 @@ Function find_directory {
                 if (Test-Path -Path $subdirpath) {
                     $path = Join-Path $subdirpath -ChildPath $relpath
                     if (Test-Path -Path $path -PathType Container) {
-                        Invoke-Expression "$cd $path"
-                        return
+                        if ($Script:print) {
+                            return $path
+                        }
+                        else {
+                            return Set-Location $path
+                        }
                     }
                     else {
                         Write-Error "Directory $path does not exist" -ErrorAction stop

@@ -18,6 +18,7 @@ sudo apt-get install ninja
 sudo apt-get install openssh
 sudo apt-get install perl-base
 sudo apt-get install manpages-posix-dev
+sudo apt install linux-tools-generic
 sudo apt-get install
 sudo apt-get install
 sudo apt-get install

@@ -13,6 +13,9 @@ make=
 link=
 help=
 
+home_bin=${HOME}/.local/bin
+prompt_colour=green
+
 while [ $# -gt '0' -a -z "$arg" ]; do
     if [ "$1" = "--make" ]; then
         make=1
@@ -65,5 +68,5 @@ if [ -n "$link" ]; then
 else
     shift
     echo "cd $(pathdir) &&" "$cmd" -q "$@"
-    rlwrap --prompt-colour=red --file=/home/sj/bin/rdm-sql.completion "$cmd" -q "$@"
+    rlwrap --prompt-colour=${prompt_colour} --file=${home_bin}/rdm-sql.completion "$cmd" -q "$@"
 fi

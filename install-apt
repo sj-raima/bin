@@ -12,6 +12,7 @@ sudo apt-get install emacs
 sudo apt-get install gdb
 sudo apt-get install gdbserver
 sudo apt-get install git
+sudo apt-get install install git-cola
 sudo apt-get install jq
 sudo apt-get install makeself
 sudo apt-get install ninja
@@ -22,7 +23,6 @@ sudo apt-get install linux-tools-generic
 sudo apt-get install autoconf
 sudo apt-get install libtool
 sudo apt-get install emacs25
-sudo apt-get install
 sudo apt-get install
 sudo apt-get install
 sudo apt-get install

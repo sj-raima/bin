@@ -23,12 +23,19 @@ sudo apt-get install linux-tools-generic
 sudo apt-get install autoconf
 sudo apt-get install libtool
 sudo apt-get install emacs25
-sudo apt-get install
-sudo apt-get install
-sudo apt-get install
-sudo apt-get install
-sudo apt-get install
+sudo apt install gnuplot-x11
+sudo apt install postgresql-client-common
+sudo apt install postgresql postgresql-contrib
+sudo -u postgres createuser -d sj
 
+sudo apt install mysql-server mysql-client
+sudo mysql mysql <<EOF
+CREATE USER 'sj'@'localhost' IDENTIFIED BY '';
+CREATE DATABASE sj;
+GRANT ALL PRIVILEGES ON sj.* TO 'sj'@'localhost';
+EOF
+
+sudo apt  install tree
 
 # Install PowerShell
 sudo apt-get update

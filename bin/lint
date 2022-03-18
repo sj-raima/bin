@@ -1,0 +1,44 @@
+#!/bin/sh
+args=
+lint=y
+
+parse_args () {
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -I*)
+                args="$args $1"
+                shift
+                ;;
+            -D*)
+                args="$args $1"
+                shift
+                ;;
+            -o)
+                shift
+                shift
+                ;;
+            -*)
+                shift
+                ;;
+           *.o)
+                shift
+                lint=n
+                ;;
+            *)
+                args="$args $1"
+                shift
+                ;;
+        esac
+    done
+}
+
+parse_args "$@"
+
+if [ $lint = y ]; then
+#    flint -i /usr/local/etc/flint co-unix.lnt co-gcc.lnt co-rdm.lnt au-misra3.lnt $args >lint.out 2>lint.err
+    flint -i /usr/local/etc/flint co-unix.lnt co-gcc.lnt co-rdm.lnt $args >lint.out 2>lint.err
+    cat lint.out | sed -e "s|^\(/[^ ]*\)  \([0-9]*\)  |\1:\2: |"  | sed -e "s|^\(.*\)(line \([0-9]*\), file \(/[^ ]*\)) |\3:\2: \1|" >&2
+    #rm lint.out lint.err
+fi
+
+gcc "$@"

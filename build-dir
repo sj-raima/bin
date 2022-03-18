@@ -233,6 +233,12 @@ parse_command_line () {
             cpp_flags="$cpp_flags -DNDEBUG"
             setup_build_dir
             ;;
+        lint-misra)
+            cpp_flags="$cpp_flags -DRDM_NO_OS:BOOL=On"
+            CC=lint-misra
+            CXX=lint-misra
+            setup_build_dir
+            ;;
         b-cross-debug-*)
             build_cross_debug
             ;;

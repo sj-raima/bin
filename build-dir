@@ -191,6 +191,14 @@ parse_command_line () {
             cpp_flags="$cpp_flags -DRDM_TAG_FAIL:BOOL=On"
             setup_build_dir
             ;;
+        tag-list-of-lists)
+            cpp_flags="$cpp_flags -DRDM_TAG_SUB_LIST_OF_LISTS"
+            setup_build_dir
+            ;;
+        tag-bitmap)
+            cpp_flags="$cpp_flags -DRDM_TAG_SUB_BITMAP"
+            setup_build_dir
+            ;;
         gdb)
             cpp_flags="$cpp_flags -DRDM_GDB_EMACS"
             setup_build_dir

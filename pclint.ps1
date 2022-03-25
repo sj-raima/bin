@@ -11,7 +11,7 @@ function process_options
 
         if ($arg.substring(0, 2) -eq '-I')
         {
-            $script:all_args = -join("$script:all_args", '-i"', (Resolve-Path -path $arg.substring(2)), '"')
+            $script:all_args = -join("$script:all_args", '-I', (Resolve-Path -path $arg.substring(2)))
         }
         else 
         {
@@ -25,18 +25,15 @@ function process_options
 #
 function execute_lint
 {
-    $lint_command = -join($ENV:LINT_ROOT, '/lint-nt.exe', ' ')
-    $lint_command = -join($lint_command, '-i"', $ENV:LINT_ROOT, '/lnt/" ') ## PC-lint config file location
-    $lint_command = -join($lint_command, 'co-msc90.lnt ')                  ## PC-lint config files
-    $lint_command = -join($lint_command, '-u -b ')                         ## Suppress banner
-    $lint_command = -join($lint_command, '"+os(', $outfile, ')" ')         ## Output file specification
+    $lint_command = -join($ENV:LINT_ROOT, '/lint-nt.exe', ' ')           ## PC-Lint executable
+    $lint_command = -join($lint_command, '-I', $ENV:LINT_ROOT, '/lnt/ ') ## PC-Lint config file location
+    $lint_command = -join($lint_command, 'co-mswin.lnt co-msc90.lnt ')   ## PC-Lint config files
+    $lint_command = -join($lint_command, '-u -b ')                       ## Suppress banner
+    $lint_command = -join($lint_command, '"+os(', $outfile, ')" ')       ## Output file specification
     $lint_command = -join($lint_command, $all_args)
     
-    Write-Host "lint_command = $lint_command"
+    #Write-Host "lint_command = $lint_command"
     Invoke-Expression $lint_command
-
-    #$str = 'c:\apps\lint\lint-nt.exe'
-    #Invoke-Expression $str
 }
 
 try

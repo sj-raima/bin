@@ -1,0 +1,41 @@
+#!/usr/bin/perl -w
+
+use strict;
+use warnings;
+use Cwd;
+use Cwd 'abs_path';
+use File::Basename;
+
+my $all_args = '';
+my $ARG = '';
+
+my $dir = getcwd ();
+my $outfile = basename ($dir) . ".lnt";
+
+while (@ARGV) {
+    if ($ARGV[0] eq '--setup') {
+        unlink ($outfile);
+        exit;
+    }
+    $ARG = $ARGV[0];
+
+    if (substr ($ARG, 0, 2) eq '-I') {
+        $all_args .= '-i"' . abs_path (substr ($ARG, 2)) . '"';
+    }
+    else {
+        $all_args.= $ARG;
+    }
+    $all_args.= ' ';
+
+    shift @ARGV;
+}
+
+
+my $my_command = '';
+$my_command .= $ENV{LINT_ROOT} . '/flint -i"' . $ENV{LINT_ROOT} . '/lnt" co-unix.lnt co-gcc.lnt -u -b ';
+$my_command .= "\"+os(" . $outfile . ")\" ";
+$my_command .= $all_args;
+
+#print $my_command . "\n";
+
+system ($my_command);

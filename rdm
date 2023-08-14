@@ -91,5 +91,5 @@ if [ -n "$link" ]; then
 else
     echo "cd $(pathdir) &&" "$dir$build_type$cmd" -q "$@"
     shift
-    rlwrap --prompt-colour=red --file=/home/sj/bin/rdm-sql.completion "$dir$build_type$cmd" -q "$@"
+    rlwrap --prompt-colour=red --file=/home/dtoyama/.local/bin/rdm-sql.completion "$dir$build_type$cmd" -q "$@"
 fi

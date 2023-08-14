@@ -10,14 +10,15 @@ program="$0"
 
 arg=
 make=
+ninja=
 link=
 help=
 
-home_bin=${HOME}/.local/bin
-prompt_colour=green
-
 while [ $# -gt '0' -a -z "$arg" ]; do
-    if [ "$1" = "--make" ]; then
+    if [ "$1" = "--ninja" ]; then
+        ninja=1
+        shift
+    elif [ "$1" = "--make" ]; then
         make=1
         shift
     elif [ "$1" = "--link" ]; then
@@ -36,7 +37,8 @@ if [ -n "$help" ]; then
     echo
     echo "    rdm [--make] [--link] [-h|--help] <command> <arguments>"
     echo
-    echo "    --make       Build the tool before executing it"
+    echo "    --make       Build the tool with make before executing it"
+    echo "    --ninja      Build the tool with ninja before executing it"
     echo "    --link       Make a symbolic link for the command to the current"
     echo "                   working directory"
     echo "    [-h|--help]  Print his help"
@@ -57,16 +59,37 @@ if [ -n "$make" ]; then
     popd
 fi
 
-cmd=$(searchdir source/rdm-"$1" 2>/dev/null)rdm-"$1"
+if [ -n "$ninja" ]; then
+    pushd $(searchdir .) >/dev/null || die "Did not find executable directory"
+    ninja source/rdm-"$1"/all 2>/dev/null >/dev/null || die "Failed to compile"
+    popd
+fi
+
+dir=$(searchdir source/rdm-"$1" 2>/dev/null)
+cmd=rdm-"$1"
 if [ $? != 0 ]; then
     echo "error: RDM command not found: rdm-""$1" >&2
     exit 2
 fi
 
-if [ -n "$link" ]; then
-    ln -s "$cmd" rdm-"$1" >/dev/null || die "Did not find executable directory"
+if [ -x "${dir}$cmd" ]; then
+    build_type=
+elif [ -x "${dir}Debug/$cmd" ]; then
+    build_type=Debug/
+elif [ -x "${dir}Release/$cmd" ]; then
+    build_type=Release/
+elif [ -x "${dir}RelWithDebInfo/$cmd" ]; then
+    build_type=RelWithDebInfo/
+elif [ -x "${dir}MinSizeRel/$cmd" ]; then
+    build_type=MinSizeRel/
 else
+    die "$cmd not found"
+fi
+
+if [ -n "$link" ]; then
+    ln -s "$dir$build_type$cmd" "$cmd" >/dev/null || die "Did not find executable directory"
+else
+    echo "cd $(pathdir) &&" "$dir$build_type$cmd" -q "$@"
     shift
-    echo "cd $(pathdir) &&" "$cmd" -q "$@"
-    rlwrap --prompt-colour=${prompt_colour} --file=${home_bin}/rdm-sql.completion "$cmd" -q "$@"
+    rlwrap --prompt-colour=red --file=/home/sj/bin/rdm-sql.completion "$dir$build_type$cmd" -q "$@"
 fi

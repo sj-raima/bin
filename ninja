@@ -1,0 +1,18 @@
+#!/bin/bash
+extra_args=
+case $1 in
+     Debug|Release|RelWithDebInfo|MinSizeRel|Valgrind|RelFlto)
+         extra_args="-f build-$1.ninja"
+         shift
+         ;;
+esac
+if [ -e .git ]; then
+   /usr/bin/ninja "$@"
+elif [ -f build.ninja ]; then
+    /usr/bin/ninja $extra_args "$@"
+else
+    dir=${PWD}
+    cd $(searchdir .)
+    reldir=${dir#$PWD/}
+    /usr/bin/ninja $extra_args $reldir/all "$@"
+fi

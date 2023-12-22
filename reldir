@@ -49,8 +49,18 @@ while test "$(pwd)" != "/"; do
         else
             if [ -d cmake-build-${rel} ]; then
                 echo "$relup/cmake-build-$rel/$relpath"
+            elif [ -d b-${rel} ]; then
+                echo "$relup/b-$rel/$relpath"
             else
                 echo "$relup/$rel/$relpath"
+            fi
+            if [ -e "$rel/CMakeLists.txt" -o -e "cmake-build-$rel/CMakeCache.txt" -o -e "$rel/CMakeCache.txt" -o -e "b-$rel/CMakeCache.txt" -o -e "$rel/config.status" -o -e "b-$rel/config.status" ]; then
+                :
+            else
+                echo "Non existing directory. Possible values:" >&2
+                for file in */config.status */CMakeCache.txt; do
+                    echo "  rcd $(dirname $file)" >&2
+                done
             fi
         fi
         exit 0;

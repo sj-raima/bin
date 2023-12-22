@@ -1,0 +1,98 @@
+#!/bin/bash
+
+help () {
+    echo "Usage: rdm-install /<<PATH>>/<<PACKAGE_NAME>>-obj-<<PLATFORMS>>.--<<VERSION_NUMBER>>.run.sh"
+    echo
+    echo "Install RDM according to the following steps"
+    echo
+    echo "   1. Remove existing symlink for the package we may have"
+    echo "   2. Install the package"
+    echo "   3. Move the package to a version specific directory name"
+    echo "   4. Create a symlink"
+    exit 1
+}
+
+info () {
+     echo "rdm-install: info: $1"
+}
+
+error () {
+    echo "rdm-install: error: $1, --help for help"
+    if [ -n "$base" ]; then
+        info "The base name was: $base"
+    fi
+    exit 1
+}
+
+parse_command_line () {
+    force=
+    package_install_file=
+
+    case "$1" in
+        -h|--help)
+            help
+            ;;
+        *)
+            package_install_file="$1"
+            shift
+            ;;
+    esac
+    if [ -z "$package_install_file" ]; then
+        error "package_install_file not specified"
+    fi
+
+    if [ ! -f "$package_install_file" ]; then
+        error "package_install_file is not a regular file"
+    fi
+
+    base=$(basename "$package_install_file")
+    rest=${base##*--}
+
+    package_base=${base%%-obj*}
+    package_version=${rest%%.run.sh}
+    package_main_version=${package_version%.*.*}
+
+#    echo "base: $base"
+#    echo "package_base: $package_base"
+#    echo "package_version: $package_version"
+#    echo "package_main_version: $package_main_version"
+
+    if [ -z "$package_base" ]; then
+        error "Could not find the base name for the package"
+    fi
+    if [ -z "$package_main_version" ]; then
+        error "Could not find the version without the build number for the package"
+    fi
+    package_link="/opt/Raima/$package_base-$package_main_version"
+    package_dir="/opt/Raima/$package_base-$package_version"
+}
+
+remove_package_link () {
+    if [ -h "$package_link" ]; then
+        rm "$package_link"
+    elif [ -e "$package_link" ]; then
+        error "File $package_link exist and it is not a symbolic link"
+    fi
+}
+
+install_package () {
+    if [ -d "$package_dir" ]; then
+        info "Only setting up links sice directory $package_dir already exist"
+    elif [ -e "$package_dir" ]; then
+        error "File $package_dir exist and it is not a directory"
+    else
+        sh "$package_install_file" --nox11 /opt/Raima
+        mv "$package_link" "$package_dir"
+    fi
+}
+
+add_package_link () {
+    ln -s "$package_dir" "$package_link"
+}
+
+parse_command_line "$@"
+remove_package_link
+install_package
+add_package_link
+
+

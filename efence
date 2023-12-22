@@ -1,0 +1,8 @@
+#!/bin/bash
+EFENCE_ARG1=LD_PRELOAD=libefence.so.0.0
+EFENCE_ARG2=EF_PROTECT_FREE=1
+echo "We will launch program as follows:
+
+    $EFENCE_ARG1 $EFENCE_ARG2 $@
+"
+eval $EFENCE_ARG1 $EFENCE_ARG2 "$@"

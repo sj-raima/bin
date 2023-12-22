@@ -1,5 +1,33 @@
 #!/bin/bash
 
+echo_c () {
+    echo "    $" "$1"
+}
+
+echo_env () {
+    if [ -n "$CC" ]; then
+        echo_c "CC=\"$CC\"; export CC"
+    fi
+    if [ -n "$CXX" ]; then
+        echo_c "CXX=\"$CXX\"; export CXX"
+    fi
+    if [ -n "$CPPFLAGS" ]; then
+        echo_c "CPPFLAGS=\"$CPPFLAGS\"; export CPPFLAGS"
+    fi
+    if [ -n "$CFLAGS" ]; then
+        echo_c "CFLAGS=\"$CFLAGS\"; export CFLAGS"
+    fi
+    if [ -n "$CXXFLAGS" ]; then
+        echo_c "CXXFLAGS=\"$CXXFLAGS\"; export CXXFLAGS"
+    fi
+    if [ -n "$LDFLAGS" ]; then
+        echo_c "LDFLAGS=\"$LDFLAGS\"; export LDFLAGS"
+    fi
+    if [ -n "$LIBS" ]; then
+        echo_c "LIBS=\"$LIBS\"; export LIBS"
+    fi
+}
+
 init_options () {
     cpp_flags=
     cmake_opt=
@@ -32,6 +60,7 @@ setup_base_and_version () {
     _version=${1##$base}
     if [ -n "$_version" ]; then
         export version=${_version#-}
+        echo_c "export version=${_version#-}"
     fi
 }
 
@@ -40,24 +69,37 @@ setup_cc_and_cxx () {
     CXX="$CXX$_version"
 }
 
+setup_native_build_dir () {
+    DIR=$(pwd)
+    DIR=${DIR%-client}
+    NATIVE_BUILD_DIR=$DIR/cmake-build-debug
+    if [ ! -d $NATIVE_BUILD_DIR ]; then
+        NATIVE_BUILD_DIR=$DIR/b-debug
+    fi
+}
+
 build_aarch64 () {
-    NATIVE_BUILD_DIR=$(pwd)/b-debug
+    setup_native_build_dir
     CC="aarch64-linux-gnu-gcc$_version"; export CC
     CXX="aarch64-linux-gnu-g++$_version"; export CXX
     CPPFLAGS="-DNDEBUG"; export CPPFLAGS
-    CFLAGS="-O2 -g"; export CFLAGS
-    CXXFLAGS="-O2 -g -frtti -fexceptions"; export CXXFLAGS
+    CFLAGS="-g"; export CFLAGS
+    CXXFLAGS="-g"; export CXXFLAGS
     OBJCFLAGS=""; export OBJCFLAGS
     LDFLAGS=""; export LDFLAGS
     LIBS=""; export LIBS
 
+    echo_env
+    echo_c "mkdir b-aarch64"
     mkdir b-aarch64
+    echo_c "pushd b-aarch64"
     pushd b-aarch64
-    ../configure --build=`\`dirname "$0"\`/config.guess` --host=aarch64-unknown-linux-gnu --enable-native-build-dir=$NATIVE_BUILD_DIR
+    echo_c "$(pwd)/../configure --build=`\`dirname "$0"\`/config.guess` --host=aarch64-unknown-linux-gnu --enable-native-build-dir=$NATIVE_BUILD_DIR"
+    $(pwd)/../configure --build=`\`dirname "$0"\`/config.guess` --host=aarch64-unknown-linux-gnu --enable-native-build-dir=$NATIVE_BUILD_DIR
 }
 
 build_cross () {
-    NATIVE_BUILD_DIR=$(pwd)/b-debug
+    setup_native_build_dir
     CC="$target-gcc$_version"; export CC
     CXX="$target-g++$_version"; export CXX
     CPPFLAGS="-DNDEBUG"; export CPPFLAGS
@@ -65,37 +107,72 @@ build_cross () {
     LDFLAGS=""; export LDFLAGS
     LIBS=""; export LIBS
 
+    echo_env
+    echo_c "mkdir $dir"
     mkdir $dir
+    echo_c "cd $dir"
     cd $dir
-    ../configure --build=`\`dirname "$0"\`/config.guess` --host=$target --enable-native-build-dir=$NATIVE_BUILD_DIR
+    echo_c "$(pwd)/../configure --build=`\`dirname "$0"\`/config.guess` --host=$target --enable-native-build-dir=$NATIVE_BUILD_DIR"
+    $(pwd)/../configure --build=`\`dirname "$0"\`/config.guess` --host=$target --enable-native-build-dir=$NATIVE_BUILD_DIR
 }
 
 build_cross_debug () {
     target=${base##b-cross-debug-}
     CFLAGS="-O0 -g"; export CFLAGS
-    CXXFLAGS="-O0 -g -frtti -fexceptions"; export CXXFLAGS
+    CXXFLAGS="-O0 -g"; export CXXFLAGS
 
     build_cross
 }
 
 build_cross_release () {
     target=${base##b-cross-release-}
-    CFLAGS="-O2 -g"; export CFLAGS
-    CXXFLAGS="-O2 -g -frtti -fexceptions"; export CXXFLAGS
+    CFLAGS="-g"; export CFLAGS
+    CXXFLAGS="-g"; export CXXFLAGS
     
     build_cross
 }
 
+build_target () {
+    setup_native_build_dir
+    target=${base##b-target-}
+
+    echo_env
+
+    echo_c "mkdir $dir"
+    mkdir $dir
+    echo_c "cd $dir"
+    cd $dir
+    echo_c "$(pwd)/../target/$target/configure --disable-shared --enable-native-build-dir=$NATIVE_BUILD_DIR"
+    $(pwd)/../target/$target/configure --disable-shared --enable-native-build-dir=$NATIVE_BUILD_DIR
+}
+
+build_autosar_sim () {
+    setup_native_build_dir
+    CC="gcc -m32"
+    CXX="g++ -m32"
+    CPPFLAGS="-DRDM_AUTOSAR_SIM"; export CPPFLAGS
+    CFLAGS="-g"; export CFLAGS
+    CXXFLAGS="-g"; export CXXFLAGS
+
+    mkdir $dir
+    cd $dir
+    $(pwd)/../configure --build=`\`dirname "$0"\`/config.guess` --host=$target --disable-shared --enable-native-build-dir=$NATIVE_BUILD_DIR
+}
 
 common_options () {
     cpp_flags="$cpp_flags -DRDM_ASSERT_RDM_UNIX"
 }
 
 setup_build_dir () {
+    echo mkdir cmake-build-$dir
+    echo pushd cmake-build-$dir
+    echo cmake -DCMAKE_INSTALL_PREFIX=/usr/local/Raima -DCMAKE_C_FLAGS:STRING=\"$cpp_flags\" -DCMAKE_CXX_FLAGS:STRING=\"$cpp_flags\" $cmake_opt -DCMAKE_COLOR_DIAGNOSTICS:BOOL=OFF -DCMAKE_COLOR_MAKEFILE:BOOL=OFF ..
+    
     rm  cmake-build-$dir/CMakeCache.txt 2>/dev/null
     mkdir cmake-build-$dir
     pushd cmake-build-$dir
-    cmake -DCMAKE_C_FLAGS:STRING="$cpp_flags" -DCMAKE_CXX_FLAGS:STRING="$cpp_flags" $cmake_opt ..
+    cmake -DCMAKE_INSTALL_PREFIX=/usr/local/Raima -DCMAKE_C_FLAGS:STRING="$cpp_flags" -DCMAKE_CXX_FLAGS:STRING="$cpp_flags" $cmake_opt -DCMAKE_COLOR_DIAGNOSTICS:BOOL=OFF -DCMAKE_COLOR_MAKEFILE:BOOL=OFF ..
+
     popd
 }
 
@@ -126,6 +203,9 @@ help () {
     echo "                           system for target"
     echo "    b-cross-release-target Debug cross build using the GNU build"
     echo "                           system for target"
+    echo "    b-cross-autosar        Autosar cross build using the GNU build"
+    echo "                           system for target"
+    echo "    b-autosar-sim      Emulate AUTOSAR on Linux"
     echo "    b-clean-cache-size-one Set up a clean cache that can only hold one item"
     echo
     echo "optionally followed by a dash and a dotted version number on any"
@@ -140,6 +220,8 @@ help () {
 }
 
 parse_command_line () {
+    echo "Run commands as follows to set up a build of" "$1" ":"
+    echo
     program=`basename "$0"`
     init_options
     common_options
@@ -191,6 +273,10 @@ parse_command_line () {
             cpp_flags="$cpp_flags -DRDM_TAG_FAIL:BOOL=On"
             setup_build_dir
             ;;
+        tag-trackex)
+            cpp_flags="$cpp_flags -DRDM_TAG_TRACKEX"
+            setup_build_dir
+            ;;
         tag-list-of-lists)
             cpp_flags="$cpp_flags -DRDM_TAG_SUB_LIST_OF_LISTS"
             setup_build_dir
@@ -201,6 +287,10 @@ parse_command_line () {
             ;;
         gdb)
             cpp_flags="$cpp_flags -DRDM_GDB_EMACS"
+            setup_build_dir
+            ;;
+        m32)
+            cpp_flags="$cpp_flags -m32"
             setup_build_dir
             ;;
         clean-cache-size-one)
@@ -239,16 +329,58 @@ parse_command_line () {
             CXX=lint-misra
             setup_build_dir
             ;;
+        clang)
+            cpp_flags=""
+            CC=clang
+            CXX=clang++
+            setup_build_dir
+            ;;
+        lint)
+            CC=lint
+            CXX=lint
+            setup_build_dir
+            ;;
         b-cross-debug-*)
             build_cross_debug
             ;;
         b-cross-release-*)
             build_cross_release
             ;;
+        b-target-*)
+            build_target
+            ;;
+        target-debug-*)
+            cmake_opt="$cmake_opt -DCMAKE_TOOLCHAIN_FILE=$PWD/target/${base#target-debug-}/toolchain.cmake"
+            cmake_opt="$cmake_opt -DNATIVE_DIR=$PWD/cmake-build-debug"
+            cmake_opt="$cmake_opt -DCMAKE_BUILD_TYPE:STRING=Debug"
+            setup_build_dir
+            ;;
+        target-release-*)
+            cmake_opt="$cmake_opt -DCMAKE_TOOLCHAIN_FILE=/home/sj/turin/target/${base#target-release-}/toolchain.cmake"
+            cmake_opt="$cmake_opt -DCMAKE_BUILD_TYPE:STRING=Release"
+            setup_build_dir
+            ;;
+        b-autosar-sim)
+            build_autosar_sim
+            ;;
+        autosar-sim)
+            cpp_flags="$cpp_flags -DRDM_AUTOSAR_SIM"
+            setup_build_dir
+            ;;
+        debug-poll)
+            cpp_flags="$cpp_flags -DRDM_TRANSPORT_SHM_POLL_NUM_USERS=10 -DRDM_TRANSPORT_HAVE_SHM_POLL"
+            cmake_opt="$cmake_opt -DCMAKE_BUILD_TYPE:STRING=Debug"
+            setup_build_dir
+            ;;
+        valgrind-poll)
+            cpp_flags="$cpp_flags -DRDM_TRANSPORT_SHM_POLL_NUM_USERS=10 -DRDM_TRANSPORT_HAVE_SHM_POLL -DRDM_TAG_MALLOC"
+            cmake_opt="$cmake_opt -DCMAKE_BUILD_TYPE:STRING=Debug"
+            setup_build_dir
+            ;;
         b-gnu)
             mkdir b-gnu
             cd b-gnu
-            ../configure
+            $(pwd)/../configure --disable-shared
             ;;
         *)
             echo "Error: Not a supported directory: $base"

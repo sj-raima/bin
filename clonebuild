@@ -16,10 +16,12 @@ die () {
 
 only=no
 kmake=no
-cmake=no
+cmake=
+legacy=
 make=no
 prebuild=no
 prebuild_opts=-n
+stage0_src=no
 stage_src=no
 share_src=no
 convert_src=no
@@ -28,17 +30,18 @@ package=no
 convert_package0=no
 package_name=rdm_mini
 check=no
-_test=no
 prebuild_option=
+build_options=
 
 target=
 
 help () {
-    echo "$program [<options>] [prebuild | kmake | cmake | make | 
-         stage-src | share-src | convert-src | build | package | convert-package0 | check | test]
+    echo "$program [<options>] [prebuild | stage0-src | stage-src | share-src |
+         convert-src | build | package | convert-package0 | check | test]
 Options:
     -p | --package-name PACKAGE      Package to build [rdm_mini]
     -t | --target TARGET             Cross compiled target []
+    -B | --build-type BUILD-TYPE     Specify the build type
          --only                      Only do the steps specified
 "
 }
@@ -61,35 +64,15 @@ build_prebuild () {
     fi
 }
 
-build_kmake () {
-    if [ $kmake = yes ]; then
-        . ./rdm.sh
-        kmake -r -f kmake.mak || die "Running kmake"
-    fi
-}
-
-build_cmake () {
-    if [ $cmake = yes ]; then
-        mkdir b-cmake
-        cd b-cmake || die "Changing working directory to the build directory"
-        cmake .. || die "Running cmake"
-        make || die "Running make"
-    fi
-}
-
-build_make () {
-    if [ $make = yes ]; then
-        autoreconf --install --force
-        mkdir b-make
-        cd b-make || die "Changing working directory to the build directory"
-        ../configure || die "Running configure"
-        make || die "Running make"
+stage0_src () {
+    if [ $stage0_src = yes ]; then
+        release-system/stage0-src.ps1 -p ${package_name} || die "Stage zero source for ${package_name}"
     fi
 }
 
 stage_src () {
     if [ $stage_src = yes ]; then
-        release-system/stage-src.sh -p ${package_name} || die "Stage source for ${package_name}"
+        release-system/stage-src.ps1 '-p' ${package_name} || die "Stage source for ${package_name}"
     fi
 }
 
@@ -111,31 +94,25 @@ convert_src () {
 
 build () {
     if [ $build = yes ]; then
-        release-system/build.sh -p ${package_name} --host-package-name lnx-x86_64 $target || die "Build for ${package_name}"
+        release-system/build.ps1 $cmake $legacy -p ${package_name} $build_options --host-package-name lnx-x86_64 $target || die "Build for ${package_name}"
     fi
 }
 
 package () {
     if [ $package = yes ]; then
-        release-system/package.sh -p ${package_name} --host-package-name lnx-x86_64 $target || die "Package for ${package_name}"
+        release-system/package.ps1 -p ${package_name} $build_options --host-package-name lnx-x86_64 $target || die "Package for ${package_name}"
     fi
 }
 
 convert_package0 () {
     if [ $convert_package0 = yes ]; then
-        release-system/convert-package0.sh -p ${package_name} --host-package-name lnx-x86_64 $target || die "convert-package0 for ${package_name}"
+        release-system/convert-package0.ps1 -p ${package_name} --host-package-name lnx-x86_64 $target || die "convert-package0 for ${package_name}"
     fi
 }
 
 check () {
     if [ $check = yes ]; then
-        release-system/check.sh -p ${package_name} --host-package-name lnx-x86_64 $target || die "Check for ${package_name}"
-    fi
-}
-
-_test () {
-    if [ $_test = yes ]; then
-        QA_CHECK=${package_name} release-system/test/all.sh --host-package-name lnx-x86_64 $target || die "Test for ${package_name}"
+        release-system/check.ps1 -p ${package_name} $build_options --host-package-name lnx-x86_64 $target || die "Check for ${package_name}"
     fi
 }
 
@@ -148,31 +125,8 @@ parse_command_line () {
                 prebuild_opts=
                 shift
             ;;
-            kmake)
-                if [ $only = no ]; then
-                    prebuild_option=--kmake
-                    prebuild_opts=
-                    prebuild=yes
-                fi
-                kmake=yes
-                shift
-            ;;
-            cmake)
-                if [ $only = no ]; then
-                    prebuild_option=--cmake
-                    prebuild_opts=-n
-                    prebuild=yes
-                fi
-                cmake=yes
-                shift
-            ;;
-            make)
-                if [ $only = no ]; then
-                    prebuild_option=--make
-                    prebuild_opts=-n
-                    prebuild=yes
-                fi
-                make=yes
+            stage0-src)
+                stage0_src=yes
                 shift
             ;;
             stage-src)
@@ -231,6 +185,15 @@ parse_command_line () {
                 test=yes
                 shift
             ;;
+            -B|--build-type)
+                shift
+                build_options="$build_options --build-type $1"
+                shift
+            ;;
+            -S|--build-shared-libs)
+                build_options="$build_options --build-shared-libs"
+                shift
+            ;;
             -h|--help)
                 help
                 exit 2
@@ -249,6 +212,22 @@ parse_command_line () {
                 only=yes
                 shift
             ;;
+            --no-cmake)
+                cmake=--no-cmake
+                shift
+            ;;
+            --cmake)
+                cmake=--cmake
+                shift
+            ;;
+            --no-legacy)
+                legacy=--no-legacy
+                shift
+            ;;
+            --legacy)
+                legacy=--legacy
+                shift
+            ;;
             *)
                 echo "Unknown option $1";
                 exit 2
@@ -261,9 +240,7 @@ parse_command_line "$@"
 
 clone_repository
 build_prebuild
-build_kmake
-build_cmake
-build_make
+stage0_src
 stage_src
 share_src
 convert_src
@@ -271,4 +248,3 @@ build
 package
 convert_package0
 check
-_test

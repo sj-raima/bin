@@ -24,6 +24,21 @@ sudo apt-get install autoconf
 sudo apt-get install libtool
 sudo apt-get install emacs25
 sudo apt install gnuplot-x11
+sudo apt install clang
+sudo apt install clang-format
+sudo apt install clang-tidy
+sudo apt install moreutils
+sudo apt install libappimage0
+sudo apt install gcc-multilib g++-multilib libc6-dev-i386
+sudo apt-get install -y gcc-aarch64-linux-gnu
+sudo apt-get install -y g++-aarch64-linux-gnu
+sudo apt-get install -y gcc-arm-none-eabi
+sudo apt install isc-dhcp-server
+sudo apt-get install -y electric-fence
+sudo apt-get install linux-libc-dev:i386
+sudo apt install rclone
+sudo apt install jq
+
 sudo apt install postgresql-client-common
 sudo apt install postgresql postgresql-contrib
 sudo -u postgres createuser -d sj
@@ -43,3 +58,7 @@ sudo apt-get install -y wget apt-transport-https software-properties-common
 wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb
 sudo apt-get update
+sudo apt install systemd-coredump
+
+
+sudo apt-get install libmpc-dev

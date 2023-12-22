@@ -3,7 +3,8 @@
 while [ $(pwd) != "/" ]; do
     if [ -e .git ]; then
         if [ -x prebuild.pl ]; then
-            ./prebuild.pl "$@"
+            echo "./prebuild.pl" "$@" > prebuild.out
+            ./prebuild.pl "$@" >> prebuild.out
             exit 0;
         fi
     fi

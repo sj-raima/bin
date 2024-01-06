@@ -12,7 +12,7 @@ elif [ -f build.ninja ]; then
     /usr/bin/ninja $extra_args "$@"
 else
     dir=${PWD}
-    cd $(searchdir .)
+    cd $(~/bin/searchdir .)
     reldir=${dir#$PWD/}
     /usr/bin/ninja $extra_args $reldir/all "$@"
 fi

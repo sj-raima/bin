@@ -16,10 +16,26 @@ case $1 in
                fi
            done
            exit $?
+        elif [ $# = 2 -a "$2" = '-i' ]; then
+           for recording in $($rr ls); do
+               if [ $recording != latest-trace ]; then
+                   echo -n -- "$recording [no]: "
+                   read -r confirm
+                   if [ "$confirm" = y -o "$confirm" = Y -o "$confirm" = yes -o "$confirm" = YES -o "$confirm" = Yes ]; then
+                       $rr rm $recording
+                   fi
+               fi
+           done
+           exit $?
         fi
         ;;
     ctest)
         sudo -EP --preserve-env=HOME rr record --setuid-sudo ctest --output-on-failure -V -C Debug "$@"
+        exit $?
+        ;;
+    setuid)
+        shift
+        sudo -EP --preserve-env=HOME rr record --setuid-sudo "$@"
         exit $?
         ;;
 esac

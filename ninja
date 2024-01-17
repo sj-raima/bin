@@ -1,7 +1,7 @@
 #!/bin/bash
 extra_args=
 case $1 in
-     Debug|Release|RelWithDebInfo|MinSizeRel|Valgrind|RelFlto)
+     Debug|Release|RelWithDebInfo|MinSizeRel|SanitizeAddress|SanitizeMemory|SanitizeThread|SanitizeUndefined|Valgrind|RelFlto)
          extra_args="-f build-$1.ninja"
          shift
          ;;
@@ -12,7 +12,7 @@ elif [ -f build.ninja ]; then
     /usr/bin/ninja $extra_args "$@"
 else
     dir=${PWD}
-    cd $(searchdir .)
+    cd $(~/bin/searchdir .)
     reldir=${dir#$PWD/}
     /usr/bin/ninja $extra_args $reldir/all "$@"
 fi

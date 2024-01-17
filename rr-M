@@ -1,0 +1,13 @@
+#!/bin/bash
+
+rr=/opt/rr/bin/rr
+
+case $1 in
+    replay)
+        shift
+        $rr replay -M "$@"
+        ;;
+    *)
+        $rr "$@"
+        ;;
+esac

@@ -7,21 +7,38 @@ case $1 in
         echo "Extra rr commands provided by this wrapper:" >&2
         echo "    rm -r       Remove all recording" >&2
         echo "    ctest <args>  Run ctest as root with output on failure" >&2
+        $rr "$@"
         ;;
     rm)
         if [ $# = 2 -a "$2" = '-r' ]; then
-           for recording in $($rr ls); do
-               if [ $recording != latest-trace ]; then
-                   $rr rm $recording
-               fi
-           done
-           exit $?
+            for recording in $($rr ls); do
+                if [ $recording != latest-trace ]; then
+                    $rr rm $recording
+                fi
+            done
+        elif [ $# = 2 -a "$2" = '-i' ]; then
+            for recording in $($rr ls); do
+                if [ $recording != latest-trace ]; then
+                    echo -n -- "$recording [no]: "
+                    read -r confirm
+                    if [ "$confirm" = y -o "$confirm" = Y -o "$confirm" = yes -o "$confirm" = YES -o "$confirm" = Yes ]; then
+                        $rr rm $recording
+                    fi
+                fi
+            done
+        else
+            $rr "$@"
         fi
         ;;
     ctest)
-        sudo -EP --preserve-env=HOME rr record --setuid-sudo ctest --output-on-failure -V -C Debug "$@"
-        exit $?
+        sudo -EP --preserve-env=HOME $rr record --setuid-sudo ctest --output-on-failure -V -C Debug "$@"
+        ;;
+    setuid)
+        shift
+        sudo -EP --preserve-env=HOME $rr record --setuid-sudo "$@"
+        ;;
+    replay)
+        shift
+        $rr replay "$@"
         ;;
 esac
-
-$rr "$@"

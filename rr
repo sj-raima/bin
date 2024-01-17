@@ -41,4 +41,7 @@ case $1 in
         shift
         $rr replay "$@"
         ;;
+    *)
+        $rr "$@"
+        ;;
 esac
